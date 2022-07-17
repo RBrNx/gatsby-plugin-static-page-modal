@@ -1,0 +1,26 @@
+{
+  "name": "gatsby-plugin-static-page-modal",
+  "version": "1.0.0",
+  "description": "Render Gatsby SSG pages within a modal context",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RBrNx/gatsby-plugin-static-page-modal.git"
+  },
+  "keywords": [
+    "gatsby",
+    "gatsby-plugin",
+    "static",
+    "modal",
+    "page",
+    "static-page",
+    "static-modal",
+    "static-page-modal"
+  ],
+  "author": "RBrNx",
+  "license": "0BSD",
+  "bugs": {
+    "url": "https://github.com/RBrNx/gatsby-plugin-static-page-modal/issues"
+  },
+  "homepage": "https://github.com/RBrNx/gatsby-plugin-static-page-modal#readme"
+}
