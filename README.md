@@ -1,113 +1,209 @@
 <p align="center">
-  <a href="https://www.gatsbyjs.com">
-    <img alt="Gatsby" src="https://www.gatsbyjs.com/Gatsby-Monogram.svg" width="60" />
+  <img alt="Gatsby" src="https://www.gatsbyjs.com/Gatsby-Monogram.svg" width="60" />
+</p>
+
+<h3 align="center">
+  Static Page Modal Plugin for Gatsby
+</h3>
+
+<p align="center">
+  A plugin for Gatsby v4 to allow static pages to be rendered as a modal, incliuding URL routing.
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/gatsby-plugin-static-page-modal">
+    <img src="https://img.shields.io/npm/v/gatsby-plugin-static-page-modal?style=flat-square" alt="Current npm package version." />
+  </a>
+  <a href="https://www.npmjs.com/package/gatsby-plugin-static-page-modal">
+    <img src="https://img.shields.io/bundlephobia/min/gatsby-plugin-static-page-modal?style=flat-square" alt="Bundle size" />
+  </a>
+  <a href="https://github.com/RBrNx/gatsby-plugin-static-page-modal/blob/master/LICENSE">
+    <img src="https://img.shields.io/npm/l/gatsby-plugin-static-page-modal?style=flat-square" alt="gatsby-plugin-static-page-modal is released under the 0BSD license." />
   </a>
 </p>
-<h1 align="center">
-  Starter for a Gatsby Plugin
-</h1>
 
-A minimal boilerplate for the essential files Gatsby looks for in a plugin.
+<hr />
 
-## 🚀 Quick start
+<br />
 
-To get started creating a new plugin, you can follow these steps:
+![Aug-05-2022 15-58-27](https://user-images.githubusercontent.com/1332314/183104661-02f75b10-ecea-4188-b8d8-94e1c554ceee.gif)
 
-1. Initialize a new plugin from the starter with `gatsby new`
+## Contents
 
-```shell
-gatsby new my-plugin https://github.com/gatsbyjs/gatsby-starter-plugin
+- [Installation](#installation)
+- [Usage Guide](#usage-guide)
+  - [Gatsby Config](#gatsby-config)
+  - [Parent Page Renderer](#parent-page-renderer)
+  - [Create Modal Component](#create-modal-component)
+  - [Navigate to Modal](#navigate-to-modal)
+- [Contributing](#contributing)
+  - [Local Development](#local-development)
+  - [Code Quality](#code-quality)
+
+<br />
+
+## Installation
+
+You can install via Yarn or npm
+
+```bash
+yarn add gatsby-plugin-static-page-modal
 ```
 
-If you already have a Gatsby site, you can use it. Otherwise, you can [create a new Gatsby site](https://www.gatsbyjs.com/tutorial/part-0/#create-a-gatsby-site) to test your plugin.
-
-Your directory structure will look similar to this:
-
-```text
-/my-gatsby-site
-├── gatsby-config.js
-└── /src
-    └── /pages
-        └── /index.js
-/my-plugin
-├── gatsby-browser.js
-├── gatsby-node.js
-├── gatsby-ssr.js
-├── index.js
-├── package.json
-└── README.md
+```bash
+npm install gatsby-plugin-static-page-modal
 ```
 
-With `my-gatsby-site` being your Gatsby site, and `my-plugin` being your plugin. You could also include the plugin in your [site's `plugins` folder](https://www.gatsbyjs.com/docs/loading-plugins-from-your-local-plugins-folder/).
+<br />
 
-2. Include the plugin in a Gatsby site
+## Usage Guide
 
-Inside of the `gatsby-config.js` file of your site (in this case, `my-gatsby-site`), include the plugin in the `plugins` array:
+There are a few steps to follow to get the plugin working as desired.
+
+#### Gatsby Config
+
+The first step is to add the plugin into your `gatsby-config.js`. 
 
 ```javascript
-module.exports = {
-  plugins: [
-    // other gatsby plugins
-    // ...
-    require.resolve(`../my-plugin`),
-  ],
+    {
+      resolve: 'gatsby-plugin-static-page-modal',
+      options: {
+        pageRendererPath: `${__dirname}/src/library/components/PageRenderer.tsx`,
+        routes: ['/portfolio/:slug/', '/blog/:slug/'],
+      },
+    },
+```
+Next we need to populate the options object with two pieces of information:
+
+`pageRendererPath` - A path to a component which will be used to render the page _behind_ the modal
+
+`routes` - An array of paths that correspond to the routes we want the page renderer to support.
+
+#### Parent Page Renderer
+
+Let's now create our page renderer component which is required to allow us to render the parent page beneath the modal. If your pages use GraphQL queries then Gatsby will generate `page-data.json` files during the build process - these will be used to populate the parent page with the data its expecting.
+
+```javascript
+import React from 'react';
+import PortfolioPage from '../../pages/portfolio/index';
+import PortfolioPageJSON from '../../../public/page-data/portfolio/page-data.json';
+import BlogPage from '../../pages/blog/index';
+import BlogPageJSON from '../../../public/page-data/blog/page-data.json';
+
+interface PageRendererProps {
+  match: {
+    route: {
+      path: string;
+    };
+    params: {
+      [key: string]: string;
+    };
+    uri: string;
+  };
 }
+
+const PageRenderer = ({ match }: PageRendererProps) => {
+  switch (match.route.path) {
+    case '/portfolio/:slug/':
+      return <PortfolioPage data={PortfolioPageJSON?.result?.data} />;
+
+    case '/blog/:slug/':
+      return <BlogPage data={BlogPageJSON?.result?.data} />;
+
+    default:
+      return null;
+  }
+};
+
+export default PageRenderer;
+
 ```
 
-The line `require.resolve('../my-plugin')` is what accesses the plugin based on its filepath on your computer, and adds it as a plugin when Gatsby runs.
+NOTE: `gatsby develop` or `gatsby build` may fail if the above `page-data.json` files do not exist. These can be generated with a simple bash script that can be run before the build process starts or during a CI Pipeline - `"start": "./initialisePageData.sh && gatsby develop",`
 
-_You can use this method to test and develop your plugin before you publish it to a package registry like npm. Once published, you would instead install it and [add the plugin name to the array](https://www.gatsbyjs.com/docs/using-a-plugin-in-your-site/). You can read about other ways to connect your plugin to your site including using `npm link` or `yarn workspaces` in the [doc on creating local plugins](https://www.gatsbyjs.com/docs/creating-a-local-plugin/#developing-a-local-plugin-that-is-outside-your-project)._
+`initialisePageData.sh`
+```bash
+folderPaths=("public/page-data/portfolio/" "public/page-data/blog/")
+for folder in ${folderPaths[@]};
+do
+  file="${folder}page-data.json"
+  if [ ! -f "${file}" ]; then
+    echo "Creating page data for $folder"
+    mkdir -p $folder
+    touch $file
+    echo {} >> $file
+  fi
+done
 
-3. Verify the plugin was added correctly
-
-The plugin added by the starter implements a single Gatsby API in the `gatsby-node` that logs a message to the console. When you run `gatsby develop` or `gatsby build` in the site that implements your plugin, you should see this message.
-
-You can verify your plugin was added to your site correctly by running `gatsby develop` for the site.
-
-You should now see a message logged to the console in the preinit phase of the Gatsby build process:
-
-```shell
-$ gatsby develop
-success open and validate gatsby-configs - 0.033s
-success load plugins - 0.074s
-Loaded gatsby-starter-plugin
-success onPreInit - 0.016s
-...
 ```
 
-4. Rename the plugin in the `package.json`
+#### Create Modal Component
 
-When you clone the site, the information in the `package.json` will need to be updated. Name your plugin based off of [Gatsby's conventions for naming plugins](https://www.gatsbyjs.com/docs/naming-a-plugin/).
+Now you will need to create a new static page as you would normally do with Gatsby, which should contain the modal you want to display. Here is a simplified example of the `portfolio/{portfolioItem.title}.tsx` file
 
-## 🧐 What's inside?
+```javascript
+// Imports removed for simplicity
 
-This starter generates the [files Gatsby looks for in plugins](https://www.gatsbyjs.com/docs/files-gatsby-looks-for-in-a-plugin/).
+const PortfolioItem = ({ data }: PageProps<PortfolioItemQuery, null, NavigationState>) => {
+  const [modalVisible, setModalVisible] = useState(false);
 
-```text
-/my-plugin
-├── .gitignore
-├── gatsby-browser.js
-├── gatsby-node.js
-├── gatsby-ssr.js
-├── index.js
-├── LICENSE
-├── package.json
-└── README.md
+  useEffect(() => {
+    setModalVisible(true);
+  }, []);
+
+  const onModalClose = () => {
+    setModalVisible(false);
+  };
+
+  return (
+    <>
+      <CardModal
+        show={modalVisible}
+        onClose={onModalClose}
+        onFlipFinish={onFlipFinish}
+        cardFront={CardFrontComponent}
+        cardBack={CardBackComponent}
+        style={initialModalStyle}
+      />
+    </>
+  );
+};
+
+// Page Query removed from simplicity
+
+export default PortfolioItem;
 ```
 
-- **`.gitignore`**: This file tells git which files it should not track / not maintain a version history for.
-- **`gatsby-browser.js`**: This file is where Gatsby expects to find any usage of the [Gatsby browser APIs](https://www.gatsbyjs.com/docs/browser-apis/) (if any). These allow customization/extension of default Gatsby settings affecting the browser.
-- **`gatsby-node.js`**: This file is where Gatsby expects to find any usage of the [Gatsby Node APIs](https://www.gatsbyjs.com/docs/node-apis/) (if any). These allow customization/extension of default Gatsby settings affecting pieces of the site build process.
-- **`gatsby-ssr.js`**: This file is where Gatsby expects to find any usage of the [Gatsby server-side rendering APIs](https://www.gatsbyjs.com/docs/ssr-apis/) (if any). These allow customization of default Gatsby settings affecting server-side rendering.
-- **`index.js`**: A file that will be loaded by default when the plugin is [required by another application](https://docs.npmjs.com/creating-node-js-modules#create-the-file-that-will-be-loaded-when-your-module-is-required-by-another-application0). You can adjust what file is used by updating the `main` field of the `package.json`.
-- **`LICENSE`**: This plugin starter is licensed under the 0BSD license. This means that you can see this file as a placeholder and replace it with your own license.
-- **`package.json`**: A manifest file for Node.js projects, which includes things like metadata (the plugin's name, author, etc). This manifest is how npm knows which packages to install for your project.
-- **`README.md`**: A text file containing useful reference information about your plugin.
+#### Navigate to modal
 
-## 🎓 Learning Gatsby
+The last step is to navigate to the modal page, which will trigger the `PageRenderer` component to build the underlying parent page, and then display the modal component on top.
 
-If you're looking for more guidance on plugins, how they work, or what their role is in the Gatsby ecosystem, check out some of these resources:
+```javascript
+navigate('/portfolio/myModal', { state: { ... } });
+```
 
-- The [Creating Plugins](https://www.gatsbyjs.com/docs/creating-plugins/) section of the docs has information on authoring and maintaining plugins yourself.
-- The conceptual guide on [Plugins, Themes, and Starters](https://www.gatsbyjs.com/docs/plugins-themes-and-starters/) compares and contrasts plugins with other pieces of the Gatsby ecosystem. It can also help you [decide what to choose between a plugin, starter, or theme](https://www.gatsbyjs.com/docs/plugins-themes-and-starters/#deciding-which-to-use).
-- The [Gatsby plugin library](https://www.gatsbyjs.com/plugins/) has over 1750 official as well as community developed plugins that can get you up and running faster and borrow ideas from.
+<br />
+
+## Contributing
+
+I am more than happy to accept any contributions anyone would like to make, whether that's raising an issue, suggesting an improvement or developing a new feature.
+
+#### Local Development
+
+It's easy to get up and running locally! Just clone the repo, install the node modules and away you go! 🚀
+
+```bash
+> git clone git@github.com:RBrNx/gatsby-plugin-static-page-modal.git
+
+> cd gatsby-plugin-static-page-modal
+
+> yarn install # Alternatively use `npm install`
+```
+
+<br/>
+
+#### Code Quality
+
+To help keep the code styling consistent across the repo, I am using ESLint and Prettier, along with Git Hooks to ensure that any pull requests will meet the code quality standards.
+
+While some of the hooks are specifically for code styling, there is a `pre-push` hook implemented that will run all of the Unit Tests before any commits are pushed. If any of the Unit Tests fail, or the overall Test Coverage drops below 95%, the push will fail
