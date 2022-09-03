@@ -14,7 +14,7 @@ const buildPageElement = (match, prevProps, props) => {
   }
 
   if (component) {
-    return React.createElement(component, {
+    return React.createElement(component.default || component, {
       ...pageElementProps,
       key: page.path,
     });
