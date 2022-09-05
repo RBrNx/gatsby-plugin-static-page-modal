@@ -1,6 +1,6 @@
 {
   "name": "gatsby-plugin-static-page-modal",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Render Gatsby SSG pages within a modal context",
   "main": "index.js",
   "repository": {
