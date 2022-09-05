@@ -29,7 +29,7 @@ const buildModalElement = (match, pageResources, props) => {
   if (pageResources) {
     const { component } = pageResources;
     const { path } = pageResources.page;
-    return React.createElement(component, { ...props, key: path });
+    return React.createElement(component.default || component, { ...props, key: path });
   }
 
   return props.element;
